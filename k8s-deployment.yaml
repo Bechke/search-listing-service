@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment #kubernetes resource kind we are creating
+metadata:
+  name: vyapari-services
+spec:
+  replicas: 1 #Number of replicas
+  selector:
+    matchLabels:
+      app: vyapari-services
+  template:
+    metadata:
+      labels:
+        app: vyapari-services
+    spec:
+      containers:
+        - name: vyapari-services
+          image: vyapari-services:latest #Image that will be used in the cluster
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080 #Port that container is running
+
+---
+apiVersion: v1 #k8s API version
+kind: Service
+metadata:
+  name: vyapari-services
+spec:
+  type: NodePort #type of service: NodePort, ClusterIp, Loadbalancer
+  selector:
+    app: vyapari-services
+  ports:
+    - port: 8080 #port that service is running on cluster
+      targetPort: 8080 #port exposed by the service
+      protocol: "TCP"
