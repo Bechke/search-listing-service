@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/regions")
+@RequestMapping("/api/v1/regions")
 public class RegionController {
 
     @Autowired

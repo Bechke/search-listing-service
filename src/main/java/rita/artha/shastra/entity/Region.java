@@ -1,6 +1,7 @@
 package rita.artha.shastra.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "region")
@@ -13,6 +14,10 @@ public class Region {
     private String city;
     private String state;
     private String country;
+    private LocalDateTime created;
+    private String createdby;
+    private LocalDateTime updated;
+    private String updatedby;
 
     public Long getRegionid() {
         return regionid;
@@ -54,4 +59,35 @@ public class Region {
         this.country = country;
     }
 
+    public LocalDateTime getCreated() {
+        return created;
+    }
+
+    public void setCreated(LocalDateTime created) {
+        this.created = created;
+    }
+
+    public String getCreatedby() {
+        return createdby;
+    }
+
+    public void setCreatedby(String createdby) {
+        this.createdby = createdby;
+    }
+
+    public LocalDateTime getUpdated() {
+        return updated;
+    }
+
+    public void setUpdated(LocalDateTime updated) {
+        this.updated = updated;
+    }
+
+    public String getUpdatedby() {
+        return updatedby;
+    }
+
+    public void setUpdatedby(String updatedby) {
+        this.updatedby = updatedby;
+    }
 }
