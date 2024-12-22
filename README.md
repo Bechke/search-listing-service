@@ -7,8 +7,10 @@
 #Start app locally
 docker-compose up --build
 
-
 #Stop App
+docker-compose stop
+
+#Removes containers, networks and  the volumes will also be removed (all data stored in them will be lost).
 docker-compose down -v
 
 
