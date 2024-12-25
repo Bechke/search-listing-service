@@ -4,6 +4,12 @@
 3. Minikube
 4. kubectl
 
+#gradle
+./gradlew clean build --refresh-dependencies
+./gradlew build
+./gradlew dependencies #check for dependencies conflict
+./gradlew bootRun -Dspring.profiles.active=dev
+
 #Start app locally with MySql image
 docker-compose up --build
 
@@ -28,7 +34,5 @@ kubectl get deployments
 kubectl get svc
 kubectl get nodes -o wide
 kubectl logs <image-name>
+kubectl delete deployment vyapari-services --If you've made changes, delete and recreate the deployment:
 
-
-#gradle
-./gradlew bootRun -Dspring.profiles.active=dev

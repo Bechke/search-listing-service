@@ -11,6 +11,8 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+    networks:
+      - vyapari-network
 
   vyapari-services:
     build:
@@ -26,6 +28,12 @@ services:
       SPRING_PROFILES_ACTIVE: dev
     depends_on:
       - mysql
+    networks:
+      - vyapari-network
 
 volumes:
   mysql-data:
+
+networks:
+  vyapari-network:
+    driver: bridge

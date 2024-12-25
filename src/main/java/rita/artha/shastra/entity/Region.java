@@ -1,10 +1,13 @@
 package rita.artha.shastra.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "region")
+@Data
 public class Region {
 
     @Id
@@ -19,7 +22,7 @@ public class Region {
     private LocalDateTime updated;
     private String updatedby;
 
-    public Long getRegionid() {
+   /* public Long getRegionid() {
         return regionid;
     }
 
@@ -89,5 +92,5 @@ public class Region {
 
     public void setUpdatedby(String updatedby) {
         this.updatedby = updatedby;
-    }
+    }*/
 }
