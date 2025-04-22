@@ -12,13 +12,13 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql  # Volume configuration for MySQL data
     networks:
-      - vyapari-network
+      - bechke-network
 
-  vyapari-services:
+  search-listing-services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: vyapari-services
+    container_name: search-listing-services
     restart: always
     ports:
       - "8080:8080"
@@ -30,11 +30,11 @@ services:
     depends_on:
       - mysql
     networks:
-      - vyapari-network
+      - bechke-network
 
 volumes:
   mysql-data:  # Define a named volume for MySQL data persistence
 
 networks:
-  vyapari-network:
+  bechke-network:
     driver: bridge

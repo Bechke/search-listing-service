@@ -12,8 +12,8 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI(){
         return new OpenAPI()
                 .info((new Info()
-                        .title("Vyapari Services API")
-                        .description("API documentation for Vyapari Services")
+                        .title("Search Listing Services API")
+                        .description("API documentation for Search Listing Services")
                         .version("v1.0")));
     }
 }
