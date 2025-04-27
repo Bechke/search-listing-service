@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/vehicles")
@@ -18,5 +19,26 @@ public class VehicleController {
     @GetMapping
     public List<Vehicle> getAllVehicles() {
         return vehicleService.getAllVehicles();
+    }
+
+    @GetMapping("/{id}")
+    public Optional<Vehicle> getVehicleById(@PathVariable Integer id) {
+        return vehicleService.getVehicleById(id);
+    }
+
+    @PostMapping
+    public Vehicle createVehicle(@RequestBody Vehicle vehicle) {
+        return vehicleService.saveVehicle(vehicle);
+    }
+
+    @PutMapping("/{id}")
+    public Vehicle updateVehicle(@PathVariable Integer id, @RequestBody Vehicle vehicle) {
+        vehicle.setVehicleId(id);
+        return vehicleService.saveVehicle(vehicle);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteVehicle(@PathVariable Integer id) {
+        vehicleService.deleteVehicle(id);
     }
 }

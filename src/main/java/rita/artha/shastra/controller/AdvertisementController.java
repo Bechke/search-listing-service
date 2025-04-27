@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/ads")
@@ -18,5 +19,26 @@ public class AdvertisementController {
     @GetMapping
     public List<Advertisement> getAllAds() {
         return advertisementService.getAllAdvertisements();
+    }
+
+    @GetMapping("/{id}")
+    public Optional<Advertisement> getAdById(@PathVariable Integer id) {
+        return advertisementService.getAdvertisementById(id);
+    }
+
+    @PostMapping
+    public Advertisement createAd(@RequestBody Advertisement ad) {
+        return advertisementService.saveAdvertisement(ad);
+    }
+
+    @PutMapping("/{id}")
+    public Advertisement updateAd(@PathVariable Integer id, @RequestBody Advertisement ad) {
+        ad.setAdvertisementId(id);
+        return advertisementService.saveAdvertisement(ad);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteAd(@PathVariable Integer id) {
+        advertisementService.deleteAdvertisement(id);
     }
 }
