@@ -24,6 +24,22 @@ ext {
 	set('springCloudVersion', "2023.0.4")
 }
 
+def loadEnvFile() {
+	File envFile = rootProject.file('.env')
+	if (envFile.exists()) {
+		envFile.eachLine { line ->
+			if (line && !line.startsWith("#")) {
+				def (key, value) = line.split('=', 2)
+				if (key && value) {
+					ext[key.trim()] = value.trim()
+					System.setProperty(key.trim(), value.trim())
+					println "Loaded env var: ${key.trim()}=${value.trim()}"
+				}
+			}
+		}
+	}
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -40,6 +56,8 @@ dependencies {
 	implementation 'org.projectlombok:lombok:1.18.36'
 	annotationProcessor 'org.projectlombok:lombok:1.18.36'
 	implementation 'org.springframework.kafka:spring-kafka'
+	implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+	implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
 }
 
 dependencyManagement {
@@ -50,6 +68,7 @@ dependencyManagement {
 }
 
 tasks.named('test') {
+	loadEnvFile()
 	useJUnitPlatform()
 }
 

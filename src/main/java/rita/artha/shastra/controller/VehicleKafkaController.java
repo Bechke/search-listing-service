@@ -11,12 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import rita.artha.shastra.dto.VehicleDTO;
-import rita.artha.shastra.entity.Person;
-import rita.artha.shastra.entity.Vehicle;
 import rita.artha.shastra.service.PersonService;
 import rita.artha.shastra.service.VehicleProducerService;
-
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/vehicle-kafka")
