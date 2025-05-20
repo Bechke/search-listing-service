@@ -7,7 +7,7 @@ node {
             extensions: [],
             userRemoteConfigs: [[
                 credentialsId: 'git',
-                url: 'https://github.com/Bechke/search-listing-service.git' // 🔁 Update this
+                url: 'https://github.com/Bechke/search-listing-service.git' // update if needed
             ]]
         ])
     }
@@ -18,19 +18,22 @@ node {
 
     stage('Build and Push Image') {
         withCredentials([file(credentialsId: 'gcp', variable: 'GC_KEY')]) {
-            sh("gcloud auth activate-service-account --key-file=${GC_KEY}")
-            sh 'gcloud auth configure-docker asia-south1-docker.pkg.dev'
+            sh "gcloud auth activate-service-account --key-file=${GC_KEY}"
+            sh "gcloud auth configure-docker asia-south1-docker.pkg.dev"
 
+            // Build and push using Jib to GCR
             sh """
                 ./gradlew clean jib \
-                -Djib.to.image=${repourl} \
+                -Djib.to.image=${repourl}/search-listing-service \
                 -Djib.from.image=openjdk:21
             """
         }
     }
 
     stage('Deploy') {
+        // Replace IMAGE_URL with actual base URL in deployment.yaml
         sh "sed -i 's|IMAGE_URL|${repourl}|g' k8s/deployment.yaml"
+
         step([$class: 'KubernetesEngineBuilder',
             projectId: env.PROJECT_ID,
             clusterName: env.CLUSTER,
