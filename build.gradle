@@ -76,3 +76,13 @@ tasks.named('test') {
 dockerCompose {
 	useComposeFiles = ["${rootDir}/compose.yaml"]
 }
+
+
+jib {
+	from {
+		image = project.hasProperty("jib.from.image") ? project.property("jib.from.image") : "openjdk:21"
+	}
+	to {
+		image = project.hasProperty("jib.to.image") ? project.property("jib.to.image") : "default-image"
+	}
+}

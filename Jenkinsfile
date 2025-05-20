@@ -1,6 +1,5 @@
 node {
     def repourl = "${REGISTRY_URL}/${PROJECT_ID}/${ARTIFACT_REGISTRY}"
-    def gradleCMD = "chmod +x ./gradlew"
 
     stage('Checkout') {
         checkout([$class: 'GitSCM',
@@ -8,21 +7,30 @@ node {
             extensions: [],
             userRemoteConfigs: [[
                 credentialsId: 'git',
-                url: 'https://github.com/Bechke/search-listing-service.git'
+                url: 'https://github.com/Bechke/search-listing-service.git' // 🔁 Update this
             ]]
         ])
     }
 
+    stage('Set Permissions') {
+        sh 'chmod +x ./gradlew'
+    }
+
     stage('Build and Push Image') {
         withCredentials([file(credentialsId: 'gcp', variable: 'GC_KEY')]) {
-            sh "gcloud auth activate-service-account --key-file=${GC_KEY}"
+            sh("gcloud auth activate-service-account --key-file=${GC_KEY}")
             sh 'gcloud auth configure-docker asia-south1-docker.pkg.dev'
-            sh "${gradleCMD} clean jib --image=${repourl}"
+
+            sh """
+                ./gradlew clean jib \
+                -Djib.to.image=${repourl}/your-service-name \
+                -Djib.from.image=openjdk:21
+            """
         }
     }
 
     stage('Deploy') {
-        sh "sed -i 's|IMAGE_URL|${repourl}|g' k8s/deployment.yaml"
+        sh "sed -i 's|IMAGE_URL|${repourl}/your-service-name|g' k8s/deployment.yaml"
         step([$class: 'KubernetesEngineBuilder',
             projectId: env.PROJECT_ID,
             clusterName: env.CLUSTER,
