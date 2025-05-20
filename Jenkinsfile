@@ -1,6 +1,6 @@
 node {
     def repourl = "${REGISTRY_URL}/${PROJECT_ID}/${ARTIFACT_REGISTRY}"
-    def gradleCMD = "./gradlew"
+    def gradleCMD = "chmod +x ./gradlew"
 
     stage('Checkout') {
         checkout([$class: 'GitSCM',
