@@ -23,14 +23,14 @@ node {
 
             sh """
                 ./gradlew clean jib \
-                -Djib.to.image=${repourl}/your-service-name \
+                -Djib.to.image=${repourl} \
                 -Djib.from.image=openjdk:21
             """
         }
     }
 
     stage('Deploy') {
-        sh "sed -i 's|IMAGE_URL|${repourl}/your-service-name|g' k8s/deployment.yaml"
+        sh "sed -i 's|IMAGE_URL|${repourl}|g' k8s/deployment.yaml"
         step([$class: 'KubernetesEngineBuilder',
             projectId: env.PROJECT_ID,
             clusterName: env.CLUSTER,
