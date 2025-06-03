@@ -24,8 +24,7 @@ node {
             // Build and push using Jib to GCR
             sh """
                 ./gradlew clean jib \
-                -Djib.to.image=${repourl}/search-listing-service \
-                -Djib.from.image=openjdk:21
+                -Djib.to.image=${repourl}/search-listing-service
             """
         }
     }
