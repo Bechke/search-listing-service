@@ -39,7 +39,7 @@ node {
             clusterName: env.CLUSTER,
             location: env.REGION,
             manifestPattern: 'k8s/deployment.yaml',
-            credentialsId: '6697f859-7094-4ea7-bdb4-833db844c250',
+            credentialsId: env.PROJECT_ID,
             verifyDeployments: true
         ])
     }
