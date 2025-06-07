@@ -1,5 +1,8 @@
 node {
     def repourl = "${REGISTRY_URL}/${PROJECT_ID}/${ARTIFACT_REGISTRY}"
+    def VM_USER = "bechkedekho"
+    def VM_IP = "35.200.196.46"
+    def SSH_KEY_ID = "vm-ssh-key"
 
     stage('Checkout') {
         checkout([$class: 'GitSCM',
@@ -7,7 +10,7 @@ node {
             extensions: [],
             userRemoteConfigs: [[
                 credentialsId: 'git',
-                url: 'https://github.com/Bechke/search-listing-service.git' // update if needed
+                url: 'https://github.com/Bechke/search-listing-service.git'
             ]]
         ])
     }
@@ -21,7 +24,7 @@ node {
             sh "gcloud auth activate-service-account --key-file=${GC_KEY}"
             sh "gcloud auth configure-docker asia-south1-docker.pkg.dev"
 
-            // Build and push using Jib to GCR / Artifact Registry
+            // Build and push using Jib to GCR
             sh """
                 ./gradlew clean jib \
                 -Djib.to.image=${repourl}/search-listing-service
@@ -30,48 +33,51 @@ node {
     }
 
     stage('Deploy to VM') {
-        withCredentials([sshUserPrivateKey(credentialsId: 'vm-ssh-key', keyFileVariable: 'SSH_KEY'),
-                         file(credentialsId: 'gcp', variable: 'GC_KEY')]) {
+        withCredentials([
+            file(credentialsId: 'gcp', variable: 'GC_KEY'),
+            sshUserPrivateKey(credentialsId: SSH_KEY_ID, keyFileVariable: 'SSH_KEY_PATH')
+        ]) {
 
-            // Copy the service account key to the target VM temporarily
-            sh """
-                scp -o StrictHostKeyChecking=no -i \$SSH_KEY \$GC_KEY bechkedekho@35.200.196.46:/tmp/service-account-key.json
-            """
+            // Copy service account key to target VM (safe path: /home/${VM_USER})
+            sh "scp -o StrictHostKeyChecking=no -i ${SSH_KEY_PATH} ${GC_KEY} ${VM_USER}@${VM_IP}:/home/${VM_USER}/service-account-key.json"
 
-            // Now deploy
-            sh """
-                ssh -o StrictHostKeyChecking=no -i \$SSH_KEY bechkedekho@35.200.196.46 << 'EOF'
+            // SSH and deploy
+            def remote = [
+                name: 'target-vm',
+                host: "${VM_IP}",
+                user: "${VM_USER}",
+                identityFile: "${SSH_KEY_PATH}",
+                allowAnyHosts: true
+            ]
 
-                echo "=== Authenticating gcloud & Artifact Registry ==="
-                gcloud auth activate-service-account --key-file=/tmp/service-account-key.json
-                gcloud auth configure-docker asia-south1-docker.pkg.dev
+            // Run remote deployment steps
+            sshCommand remote: remote, command: """
+                echo "=== Logging into Artifact Registry ==="
+                docker login -u _json_key --password-stdin https://asia-south1-docker.pkg.dev < /home/${VM_USER}/service-account-key.json
 
                 echo "=== Pulling latest image ==="
                 docker pull ${repourl}/search-listing-service
 
-                echo "=== Stopping and removing old container if exists ==="
+                echo "=== Stopping and removing existing container if exists ==="
                 docker stop search-listing-service || true
                 docker rm search-listing-service || true
 
                 echo "=== Running new container ==="
                 docker run -d --name search-listing-service \\
-                    --restart unless-stopped \\
-                    -p 9191:9191 \\
-                    -e SPRING_PROFILES_ACTIVE=dev \\
-                    -e SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3306/search_listing_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" \\
-                    -e SPRING_DATASOURCE_USERNAME="search_listing_user" \\
-                    -e SPRING_DATASOURCE_PASSWORD="search_listing_db_pass" \\
-                    -e SPRING_KAFKA_BOOTSTRAP_SERVERS="localhost:9092" \\
-                    -e SPRING_ZIPKIN_BASE_URL="http://localhost:9411" \\
-                    ${repourl}/search-listing-service
+                  --restart unless-stopped \\
+                  -p 9191:9191 \\
+                  -e SPRING_PROFILES_ACTIVE=dev \\
+                  -e SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/search_listing_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC \\
+                  -e SPRING_DATASOURCE_USERNAME=search_listing_user \\
+                  -e SPRING_DATASOURCE_PASSWORD=search_listing_db_pass \\
+                  -e SPRING_KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \\
+                  -e SPRING_ZIPKIN_BASE_URL=http://localhost:9411 \\
+                  ${repourl}/search-listing-service
 
                 echo "=== Deployment complete. Container running on port 9191 ==="
-                docker ps --filter "name=search-listing-service"
 
-                echo "=== Cleaning up temporary key ==="
-                rm -f /tmp/service-account-key.json
-
-EOF
+                echo "=== Showing container logs (last 50 lines) ==="
+                docker logs --tail 50 search-listing-service
             """
         }
     }
