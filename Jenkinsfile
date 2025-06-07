@@ -1,5 +1,9 @@
 node {
     def repourl = "${REGISTRY_URL}/${PROJECT_ID}/${ARTIFACT_REGISTRY}"
+    def targetVmIp = "35.200.196.46"
+    def targetVmUser = "bechkedekho"
+    def containerName = "search-listing-service"
+    def containerPort = "9191"
 
     stage('Checkout') {
         checkout([$class: 'GitSCM',
@@ -29,17 +33,37 @@ node {
         }
     }
 
-    stage('Deploy') {
-        // Replace IMAGE_URL with actual base URL in deployment.yaml
-        sh "sed -i 's|IMAGE_URL|${repourl}|g' k8s/deployment.yaml"
+    stage('Deploy to VM') {
+        withCredentials([sshUserPrivateKey(credentialsId: 'vm-ssh-key', keyFileVariable: 'SSH_KEY')]) {
+            // SSH into target VM and deploy container
+            sh """
+                ssh -o StrictHostKeyChecking=no -i \$SSH_KEY ${targetVmUser}@${targetVmIp} << 'EOF'
 
-        step([$class: 'KubernetesEngineBuilder',
-            projectId: env.PROJECT_ID,
-            clusterName: env.CLUSTER,
-            location: env.REGION,
-            manifestPattern: 'k8s/deployment.yaml',
-            credentialsId: env.PROJECT_ID,
-            verifyDeployments: true
-        ])
+                echo "=== Pulling latest image ==="
+                docker pull ${repourl}/search-listing-service
+
+                echo "=== Stopping and removing old container if exists ==="
+                docker stop ${containerName} || true
+                docker rm ${containerName} || true
+
+                echo "=== Running new container ==="
+                docker run -d --name ${containerName} \\
+                    --restart unless-stopped \\
+                    -p ${containerPort}:${containerPort} \\
+                    -e SPRING_PROFILES_ACTIVE=dev \\
+                    -e SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/search_listing_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC \\
+                    -e SPRING_DATASOURCE_USERNAME=search_listing_user \\
+                    -e SPRING_DATASOURCE_PASSWORD=search_listing_db_pass \\
+                    -e SPRING_KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \\
+                    -e SPRING_ZIPKIN_BASE_URL=http://localhost:9411 \\
+                    ${repourl}/search-listing-service
+
+                echo "=== Deployment complete. Container running on port ${containerPort} ==="
+
+                docker ps --filter "name=${containerName}"
+
+                EOF
+            """
+        }
     }
 }
