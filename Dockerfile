@@ -8,7 +8,7 @@ WORKDIR /app
 COPY build/libs/search-listing-services*.war /app/search-listing-services.war
 
 # Expose the port the app runs on
-EXPOSE 8080
+EXPOSE 9191
 
 # Run the WAR file using embedded Tomcat
-ENTRYPOINT ["java", "-jar", "/app/search-listing-services.war"]
+ENTRYPOINT ["java", "-jar", "/app/search-listing-services.war", "--spring.profiles.active=gcp"]
