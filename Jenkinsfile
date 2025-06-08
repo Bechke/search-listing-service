@@ -42,8 +42,16 @@ node {
                     echo "=== Pulling latest image ==="
                     docker pull ${repourl}/search-listing-service
 
-                    echo "=== Running new container ==="
-                    docker run -d --name search-listing-service --restart unless-stopped -p ${remoteAppPort}:9191 ${repourl}/search-listing-service
+                    echo "=== Creating network if not exists ==="
+                    docker network inspect bechke-network >/dev/null 2>&1 || docker network create bechke-network
+
+                    echo "=== Running new container on bechke-network ==="
+                    docker run -d \
+                        --name search-listing-service \
+                        --restart unless-stopped \
+                        --network bechke-network \
+                        -p ${remoteAppPort}:9191 \
+                        ${repourl}/search-listing-service
 
                     echo "=== Deployment complete. Container running on port ${remoteAppPort} ==="
                     docker ps --filter "name=search-listing-service"
