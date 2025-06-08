@@ -26,7 +26,7 @@ node {
 
             sh """
                 export REPO_URL=${repourl}
-                ./gradlew clean jib
+                ./gradlew clean jib -x test --no-build-cache
             """
         }
     }
