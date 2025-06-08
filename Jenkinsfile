@@ -24,10 +24,11 @@ node {
             sh "gcloud auth activate-service-account --key-file=${GC_KEY}"
             sh "gcloud auth configure-docker asia-south1-docker.pkg.dev"
 
-            sh '''
-                ./gradlew clean jib \
-                -Djib.to.image=${repourl}/search-listing-service
-            '''
+            // Pass REPO_URL env to gradle, Jib will pick it from build.gradle
+            sh """
+                export REPO_URL=${repourl}
+                ./gradlew clean jib
+            """
         }
     }
 

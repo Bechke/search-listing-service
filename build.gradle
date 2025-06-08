@@ -79,10 +79,11 @@ dockerCompose {
 
 
 jib {
-	from {
-		image = project.hasProperty("jib.from.image") ? project.property("jib.from.image") : "openjdk:21"
+	container {
+		ports = ['9191'] // expose your app port
 	}
 	to {
-		image = project.hasProperty("jib.to.image") ? project.property("jib.to.image") : "default-image"
+		image = "${System.getenv('REPO_URL')}/search-listing-service"
+		credHelper = 'gcr' // use gcloud credential helper
 	}
 }
