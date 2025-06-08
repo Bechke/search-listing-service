@@ -79,11 +79,22 @@ dockerCompose {
 
 
 jib {
-	container {
-		ports = ['9191'] // expose your app port
+	from {
+		image = 'openjdk:21-jdk-slim'
 	}
 	to {
 		image = "${System.getenv('REPO_URL')}/search-listing-service"
-		credHelper = 'gcr' // use gcloud credential helper
+		credHelper = 'gcr'
+	}
+	container {
+		// 1) Tell the container which port to expose
+		ports = ['9191']
+
+		// 2) Pass the JVM args so that spring uses the gcp profile and binds 0.0.0.0:9191
+		jvmFlags = [
+				'-Dspring.profiles.active=gcp',
+				'-Dserver.port=9191',
+				'-Dserver.address=0.0.0.0'
+		]
 	}
 }
