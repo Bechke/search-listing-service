@@ -34,7 +34,7 @@ node {
 
     stage('Deploy to VM') {
         withCredentials([sshUserPrivateKey(credentialsId: 'vm-ssh-key', keyFileVariable: 'SSH_KEY_PATH')]) {
-            sh '''
+            sh """
                 ssh -o StrictHostKeyChecking=no -i "$SSH_KEY_PATH" "$vmUser@$targetVmIp" << EOF
                     echo "=== Stopping and removing existing container (if any) ==="
                     docker stop search-listing-service || true
@@ -49,7 +49,7 @@ node {
                     echo "=== Deployment complete. Container running on port ${remoteAppPort} ==="
                     docker ps --filter "name=search-listing-service"
                 EOF
-            '''
+            """
         }
     }
 }
