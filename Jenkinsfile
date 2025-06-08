@@ -24,7 +24,6 @@ node {
             sh "gcloud auth activate-service-account --key-file=${GC_KEY}"
             sh "gcloud auth configure-docker asia-south1-docker.pkg.dev"
 
-            // Pass REPO_URL env to gradle, Jib will pick it from build.gradle
             sh """
                 export REPO_URL=${repourl}
                 ./gradlew clean jib
@@ -35,7 +34,7 @@ node {
     stage('Deploy to VM') {
         withCredentials([sshUserPrivateKey(credentialsId: 'vm-ssh-key', keyFileVariable: 'SSH_KEY_PATH')]) {
             sh """
-                ssh -o StrictHostKeyChecking=no -i "$SSH_KEY_PATH" "$vmUser@$targetVmIp" << EOF
+                ssh -o StrictHostKeyChecking=no -i "$SSH_KEY_PATH" "$vmUser@$targetVmIp" bash -s <<'ENDSSH'
                     echo "=== Stopping and removing existing container (if any) ==="
                     docker stop search-listing-service || true
                     docker rm search-listing-service || true
@@ -48,7 +47,7 @@ node {
 
                     echo "=== Deployment complete. Container running on port ${remoteAppPort} ==="
                     docker ps --filter "name=search-listing-service"
-                EOF
+ENDSSH
             """
         }
     }
