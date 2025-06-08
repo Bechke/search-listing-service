@@ -98,3 +98,12 @@ jib {
 		]
 	}
 }
+
+bootJar {
+	enabled = true
+}
+
+war {
+	enabled = false
+}
+
