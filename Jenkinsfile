@@ -23,7 +23,6 @@ node {
         withCredentials([file(credentialsId: 'gcp', variable: 'GC_KEY')]) {
             sh "gcloud auth activate-service-account --key-file=${GC_KEY}"
             sh "gcloud auth configure-docker asia-south1-docker.pkg.dev"
-
             sh """
                 export REPO_URL=${repourl}
                 ./gradlew clean bootJar -x test jib
@@ -35,15 +34,15 @@ node {
         withCredentials([sshUserPrivateKey(credentialsId: 'vm-ssh-key', keyFileVariable: 'SSH_KEY_PATH')]) {
             sh """
                 ssh -o StrictHostKeyChecking=no -i "$SSH_KEY_PATH" "$vmUser@$targetVmIp" bash -s <<'ENDSSH'
+                    echo "=== Creating Docker network if it doesn't exist ==="
+                    docker network inspect bechke-network >/dev/null 2>&1 || docker network create bechke-network
+
                     echo "=== Stopping and removing existing container (if any) ==="
-                    docker stop search-listing-service || true
-                    docker rm search-listing-service || true
+                    docker stop search-listing-service >/dev/null 2>&1 || true
+                    docker rm search-listing-service >/dev/null 2>&1 || true
 
                     echo "=== Pulling latest image ==="
                     docker pull ${repourl}/search-listing-service
-
-                    echo "=== Creating network if not exists ==="
-                    docker network inspect bechke-network >/dev/null 2>&1 || docker network create bechke-network
 
                     echo "=== Running new container on bechke-network ==="
                     docker run -d \
@@ -53,7 +52,7 @@ node {
                         -p ${remoteAppPort}:9191 \
                         ${repourl}/search-listing-service
 
-                    echo "=== Deployment complete. Container running on port ${remoteAppPort} ==="
+                    echo "=== Deployment complete. Running containers: ==="
                     docker ps --filter "name=search-listing-service"
 ENDSSH
             """
