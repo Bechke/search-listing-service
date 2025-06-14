@@ -21,11 +21,19 @@ node {
 
     stage('Build and Push Image') {
         withCredentials([file(credentialsId: 'gcp', variable: 'GC_KEY')]) {
-            sh "gcloud auth activate-service-account --key-file=${GC_KEY}"
-            sh "gcloud auth configure-docker asia-south1-docker.pkg.dev"
             sh """
-                export REPO_URL=${repourl}
-                ./gradlew clean bootJar -x test jib
+                echo "=== Authenticating with GCP ==="
+                gcloud auth activate-service-account --key-file=${GC_KEY}
+                gcloud auth configure-docker asia-south1-docker.pkg.dev
+
+                echo "=== Building Spring Boot JAR ==="
+                ./gradlew clean bootJar -x test
+
+                echo "=== Building Docker Image ==="
+                docker build -t ${repourl}/search-listing-service .
+
+                echo "=== Pushing Docker Image to Artifact Registry ==="
+                docker push ${repourl}/search-listing-service
             """
         }
     }
