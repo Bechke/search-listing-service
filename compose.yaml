@@ -39,14 +39,14 @@ services:
     networks:
       - bechke-network
 
-  search-listing-services:
+  search-listing-service:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: search-listing-services
     restart: always
     ports:
-      - "8080:8080"
+      - "9191:9191"
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
