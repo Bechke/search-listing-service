@@ -77,3 +77,7 @@ tasks.named('test') {
 dockerCompose {
 	useComposeFiles = ["${rootDir}/compose.yaml"]
 }
+
+bootJar {
+	enabled = true
+}
