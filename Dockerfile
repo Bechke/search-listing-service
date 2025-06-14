@@ -5,7 +5,7 @@ FROM openjdk:21-jdk-slim
 WORKDIR /app
 
 # Copy the fat JAR from Gradle build
-COPY build/libs/search-listing-services*.jar /app/search-listing-services.jar
+COPY build/libs/search-listing-services-0.0.1-SNAPSHOT.jar /app/search-listing-services.jar
 
 # Expose the application's port
 EXPOSE 9191
