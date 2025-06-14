@@ -1,18 +1,18 @@
-# Use official OpenJDK 21 slim image
+# Use Java 21 slim base image
 FROM openjdk:21-jdk-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy the fat JAR from Gradle build
-COPY build/libs/search-listing-services-0.0.1-SNAPSHOT.jar /app/search-listing-services.jar
+# Copy the only jar file (assuming one jar in build/libs)
+COPY build/libs/*.jar /app/app.jar
 
-# Expose the application's port
+# Expose port used by the Spring Boot app
 EXPOSE 9191
 
-# Run the Spring Boot application with the GCP profile
+# Run the app with the desired Spring profile and port
 ENTRYPOINT ["java", \
     "-Dspring.profiles.active=gcp", \
     "-Dserver.port=9191", \
     "-Dserver.address=0.0.0.0", \
-    "-jar", "/app/search-listing-services.jar"]
+    "-jar", "/app/app.jar"]
