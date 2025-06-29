@@ -12,7 +12,7 @@ EXPOSE 9191
 
 # Run the app with the desired Spring profile and port
 ENTRYPOINT ["java", \
-    "-Dspring.profiles.active=gcp", \
+    #"-Dspring.profiles.active=gcp", \
     "-Dserver.port=9191", \
     "-Dserver.address=0.0.0.0", \
     "-jar", "/app/app.jar"]

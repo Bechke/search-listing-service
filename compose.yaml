@@ -43,7 +43,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: search-listing-services
+    container_name: search-listing-service
     restart: always
     ports:
       - "9191:9191"
