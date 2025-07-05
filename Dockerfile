@@ -5,7 +5,7 @@ FROM openjdk:21-jdk-slim
 WORKDIR /app
 
 # Copy the only jar file (assuming one jar in build/libs)
-COPY build/libs/*.jar /app/app.jar
+COPY build/libs/search-listing-service*.jar /app/search-listing-service.jar
 
 # Expose port used by the Spring Boot app
 EXPOSE 9191
@@ -15,4 +15,4 @@ ENTRYPOINT ["java", \
     #"-Dspring.profiles.active=gcp", \
     "-Dserver.port=9191", \
     "-Dserver.address=0.0.0.0", \
-    "-jar", "/app/app.jar"]
+    "-jar", "/app/search-listing-service.jar"]

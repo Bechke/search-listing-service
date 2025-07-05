@@ -6,6 +6,7 @@
 
 # gradle
 ./gradlew clean build --refresh-dependencies -x test
+./gradlew clean assemble
 ./gradlew build
 ./gradlew dependencies #check for dependencies conflict
 ./gradlew build --continuous #continuous build feature to automatically rebuild when files change.
@@ -17,7 +18,7 @@
 docker-compose up --build
 # optional
 docker images
-docker run -p 9191:9191 vyapari-services:latest
+docker run -p 9191:9191 search-listing-service:latest
 
 # Stop App and Mysql image
 docker-compose stop
