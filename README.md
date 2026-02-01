@@ -14,8 +14,9 @@
 
 
 # Docker
-# docker build -t vyapari-services:latest .
+docker build -t search-listing-service:latest .
 docker-compose up --build
+docker-compose up -d
 # optional
 docker images
 docker run -p 9191:9191 search-listing-service:latest
@@ -25,3 +26,7 @@ docker-compose stop
 
 # Removes App containers, networks and  the volumes will also be removed (all data stored in them will be lost).
 docker-compose down -v
+
+
+# Local Url
+http://localhost:9191/swagger-ui/index.html
