@@ -31,14 +31,6 @@ services:
     networks:
       - bechke-network
 
-  zipkin:
-    image: openzipkin/zipkin:2.23
-    container_name: zipkin
-    ports:
-      - "9411:9411"
-    networks:
-      - bechke-network
-
   search-listing-service:
     build:
       context: .
@@ -53,10 +45,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
       SPRING_PROFILES_ACTIVE: dev
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-container:9092
+      DISCOVERY_URL: http://discovery:8761
     depends_on:
       - mysql
       - kafka
-      - zipkin
     networks:
       - bechke-network
 
@@ -65,4 +57,4 @@ volumes:
 
 networks:
   bechke-network:
-    driver: bridge
+    external: true

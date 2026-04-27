@@ -42,6 +42,9 @@ def loadEnvFile() {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	// Eureka client — registers this service with the discovery server so the gateway can route to it
+	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 	implementation 'com.google.cloud:spring-cloud-gcp-starter'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 

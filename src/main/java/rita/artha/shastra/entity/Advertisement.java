@@ -29,4 +29,7 @@ public class Advertisement {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    @Column(unique = true)
+    private String vehicleSourceId;
 }

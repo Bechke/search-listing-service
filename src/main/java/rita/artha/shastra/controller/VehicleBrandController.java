@@ -27,6 +27,12 @@ public class VehicleBrandController {
         return brandRepository.findByCategoryId(categoryId);
     }
 
+    @GetMapping("/by-category-name/{name}")
+    @Operation(summary = "Get brands by category name", description = "e.g. CAR, BIKE, SCOOTER")
+    public List<VehicleBrand> getBrandsByCategoryName(@PathVariable String name) {
+        return brandRepository.findByCategory_Name(name.trim().toUpperCase());
+    }
+
     @PostMapping
     @Operation(summary = "Create a new vehicle brand", description = "Add a new brand entry for a vehicle category")
     public VehicleBrand createBrand(@RequestBody VehicleBrand brand) {

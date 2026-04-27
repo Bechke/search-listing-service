@@ -16,6 +16,10 @@ public class Person {
 
     private String fullName;
 
+    /** Keycloak sub claim — the stable unique ID for this seller across all services */
+    @Column(unique = true)
+    private String keycloakId;
+
     @Column(unique = true)
     private String company;
 
