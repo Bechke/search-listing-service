@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface AdvertisementRepository extends JpaRepository<Advertisement, Integer> {
     Optional<Advertisement> findByVehicleSourceId(String vehicleSourceId);
     List<Advertisement> findByPerson_KeycloakId(String keycloakId);
+    List<Advertisement> findByOrganization_Id(Integer orgId);
 }

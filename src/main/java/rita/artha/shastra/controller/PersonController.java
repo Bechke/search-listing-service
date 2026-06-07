@@ -41,4 +41,13 @@ public class PersonController {
     public void deletePerson(@PathVariable Integer id) {
         personService.deletePerson(id);
     }
+
+    record PersonSyncRequest(String keycloakId, String fullName, String email,
+                              String mobileNumber, String company) {}
+
+    @PostMapping("/sync")
+    public Person syncPerson(@RequestBody PersonSyncRequest req) {
+        return personService.upsertPerson(req.keycloakId(), req.fullName(),
+                req.email(), req.mobileNumber(), req.company());
+    }
 }

@@ -13,6 +13,7 @@ import rita.artha.shastra.entity.Advertisement;
 import rita.artha.shastra.entity.Person;
 import rita.artha.shastra.entity.Vehicle;
 import rita.artha.shastra.repository.AdvertisementRepository;
+import rita.artha.shastra.repository.OrganizationRepository;
 import rita.artha.shastra.repository.PersonRepository;
 import rita.artha.shastra.repository.VehicleRepository;
 
@@ -23,10 +24,11 @@ import java.time.LocalDateTime;
 @KafkaListener(topics = "vehicle-ads", groupId = "vehicle-ads-consumer-group")
 public class VehicleConsumerListener {
 
-    private final VehicleRepository       vehicleRepository;
-    private final PersonRepository        personRepository;
-    private final AdvertisementRepository advertisementRepository;
-    private final ObjectMapper            objectMapper;
+    private final VehicleRepository        vehicleRepository;
+    private final PersonRepository         personRepository;
+    private final AdvertisementRepository  advertisementRepository;
+    private final OrganizationRepository   orgRepo;
+    private final ObjectMapper             objectMapper;
 
     private static final Logger logger = LoggerFactory.getLogger(VehicleConsumerListener.class);
 
@@ -85,6 +87,15 @@ public class VehicleConsumerListener {
             }
         }
 
+        if (dto.getOrganizationId() != null) {
+            try {
+                orgRepo.findById(Integer.parseInt(dto.getOrganizationId()))
+                       .ifPresent(vehicle::setOrganization);
+            } catch (NumberFormatException ignored) {
+                logger.warn("Invalid organizationId in VehicleDTO: {}", dto.getOrganizationId());
+            }
+        }
+
         vehicleRepository.save(vehicle);
         logger.info("Saved/updated Vehicle for vehicleSourceId={}", dto.getVehicleId());
 
@@ -107,6 +118,15 @@ public class VehicleConsumerListener {
         ad.setUpdatedAt(dto.getUpdatedAt() != null ? dto.getUpdatedAt() : LocalDateTime.now());
         if (ad.getCreatedAt() == null) {
             ad.setCreatedAt(dto.getCreatedAt() != null ? dto.getCreatedAt() : LocalDateTime.now());
+        }
+
+        if (dto.getOrganizationId() != null) {
+            try {
+                orgRepo.findById(Integer.parseInt(dto.getOrganizationId()))
+                       .ifPresent(ad::setOrganization);
+            } catch (NumberFormatException ignored) {
+                logger.warn("Invalid organizationId in VehicleDTO: {}", dto.getOrganizationId());
+            }
         }
 
         advertisementRepository.save(ad);

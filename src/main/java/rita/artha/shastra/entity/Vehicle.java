@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Vehicle{
+public class Vehicle {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,6 +25,7 @@ public class Vehicle{
     @Column(unique = true)
     private String vehicleSourceId;
 
+    @JsonIgnore
     private String mobile;
     private String adSubcategory;
     private String brand;
@@ -47,4 +48,9 @@ public class Vehicle{
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    private Organization organization;
 }

@@ -58,6 +58,10 @@ public class VehicleDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // ── Organization ───────────────────────────────────────────────────────────
+    /** Organization DB id as string; null for personal listings */
+    private String organizationId;
+
     // ── Legacy field kept for manual Kafka sends via VehicleKafkaController ────
     /** @deprecated use sellerId (Keycloak sub) instead */
     @Deprecated

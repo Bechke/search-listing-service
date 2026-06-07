@@ -34,4 +34,14 @@ public class Advertisement {
 
     @Column(unique = true)
     private String vehicleSourceId;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    private Organization organization;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "posted_by_person_id")
+    private Person postedBy;
 }

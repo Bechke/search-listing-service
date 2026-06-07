@@ -36,6 +36,12 @@ public class AdvertisementController {
         return advertisementRepository.findByPerson_KeycloakId(keycloakId);
     }
 
+    @GetMapping("/org/{orgId}")
+    @Operation(summary = "Get all ads for an organization (public)")
+    public List<Advertisement> getOrgAds(@PathVariable Integer orgId) {
+        return advertisementRepository.findByOrganization_Id(orgId);
+    }
+
     @GetMapping("/{id}")
     public Optional<Advertisement> getAdById(@PathVariable Integer id) {
         return advertisementService.getAdvertisementById(id);
