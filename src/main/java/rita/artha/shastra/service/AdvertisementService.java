@@ -3,7 +3,10 @@ package rita.artha.shastra.service;
 import rita.artha.shastra.entity.Advertisement;
 import rita.artha.shastra.repository.AdvertisementRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,5 +30,12 @@ public class AdvertisementService {
 
     public void deleteAdvertisement(Integer id) {
         advertisementRepository.deleteById(id);
+    }
+
+    public Page<Advertisement> search(String country, String state, String city, String neighbourhood, Pageable pageable) {
+        if (StringUtils.hasText(neighbourhood)) {
+            return advertisementRepository.findByCountryAndStateAndCityAndNeighbourhood(country, state, city, neighbourhood, pageable);
+        }
+        return advertisementRepository.findByCountryAndStateAndCity(country, state, city, pageable);
     }
 }

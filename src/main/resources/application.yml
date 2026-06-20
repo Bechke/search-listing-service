@@ -1,0 +1,84 @@
+spring:
+  application:
+    name: search-listing-service
+  #config:
+  #  activate:
+  #    on-profile: gcp
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/${MYSQL_DATABASE}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    initialization-mode: always
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: none
+
+  flyway:
+    enabled: true
+    validate-on-migrate: true
+    baseline-on-migrate: true
+    baseline-version: 0
+
+  doc:
+    api-docs:
+      enabled: true
+      path: /v3/api-docs
+    swagger-ui:
+      path: /swagger-ui.html
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: vehicle-ads-consumer-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    admin:
+      auto-create: true
+
+  zipkin:
+    base-url: ${ZIPKIN_HOST:http://localhost:9411}
+
+  sleuth:
+    sampler:
+      probability: 1.0
+
+server:
+  port: 9191
+  #address: 0.0.0.0
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_HOST:http://localhost:9411}/api/v2/spans
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${DISCOVERY_HOST:http://localhost:8761}/eureka/
+# Eureka client configuration with environment variable and fallback
+#  eureka.client.service-url.defaultZone=${DISCOVERY_HOST:http://localhost:8761}/eureka/
+# Disable Eureka in production if you're not using it
+#eureka.client.enabled=true
+#spring:
+#  profiles:
+#    active: ${SPRING_PROFILES_ACTIVE:dev}
