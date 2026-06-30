@@ -19,4 +19,7 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, In
 
     Page<Advertisement> findByCountryAndStateAndCity(
             String country, String state, String city, Pageable pageable);
+
+    /** Used by the admin panel to fetch listings by status, e.g. PENDING_REVIEW */
+    Page<Advertisement> findByStatus(String status, Pageable pageable);
 }
