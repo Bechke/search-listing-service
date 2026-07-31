@@ -44,4 +44,12 @@ public class Advertisement {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "posted_by_person_id")
     private Person postedBy;
+
+    /** True while the listing is boosted (appears at top of search results). */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean boosted = false;
+
+    /** When the boost expires. Null if not boosted. */
+    private LocalDateTime boostedUntil;
 }
