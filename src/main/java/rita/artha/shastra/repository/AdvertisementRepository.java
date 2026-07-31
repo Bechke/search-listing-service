@@ -22,4 +22,11 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, In
 
     /** Used by the admin panel to fetch listings by status, e.g. PENDING_REVIEW */
     Page<Advertisement> findByStatus(String status, Pageable pageable);
+
+    /**
+     * Counts active listings for a seller.
+     * Used by the listing-limit enforcement check before allowing a new post.
+     * Statuses REJECTED and SOLD are excluded — they no longer consume a slot.
+     */
+    long countByPerson_KeycloakIdAndStatusNotIn(String keycloakId, java.util.List<String> excludedStatuses);
 }
