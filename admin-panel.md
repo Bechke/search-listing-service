@@ -145,6 +145,16 @@ Also walked the plans/quota/boost path this same session: created 3 listings (fi
 listing with a reason via the admin queue → confirmed `rejectionReason` is surfaced back on the
 seller's own `GET /ads/my`.
 
+Separately re-walked the same plan-upgrade/quota-release flow through **org context** (personal-only
+the first time): created a business account + org through the real signup/org-setup UI, posted 5 org
+listings (fills `PlanLimits.ORG_LISTING_LIMITS.FREE = 5`), confirmed the 6th resolved to
+`PENDING_PAYMENT`, then upgraded the org to `BASIC` (₹2,999/75 listings — the org price/limit list is
+genuinely different from personal's ₹499/50, confirmed end-to-end from `UpgradePlanScreen`'s
+`context=org` down through `PlanLimits.orgLimitFor`) via the real "Organization → Subscription" UI
+flow. `Organization.subscriptionTier` updated to `BASIC` and the blocked listing released and stuck —
+confirming the transaction-ordering fix above also covers `activateOrgPlan` /
+`releaseOrgFromPendingPayment`, not just the personal path it was originally caught and fixed on.
+
 **Bug found and fixed during this pass:** `releaseFromPendingPayment`/`releaseOrgFromPendingPayment`
 (via `AdminService.updateStatus`) published its `vehicle-ads` Kafka event synchronously, before the
 surrounding `@Transactional` committed. `VehicleConsumerListener` re-consumes that same topic and,
