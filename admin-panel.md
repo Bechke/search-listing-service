@@ -102,8 +102,13 @@ consumers), so the raw entities can't surface who posted a listing — `AdminCon
 empty — Kafka-stub sellers, see the search-listing-service section of the workspace `CLAUDE.md`).
 `AdminListingDetail` also parses `Vehicle.imageUrlsJson` into a real `imageUrls: string[]` — the raw
 entity only exposes it as an opaque JSON string. admin-web's `ListingsPage` shows the seller in a
-"Posted By" column and renders the full gallery as a horizontal-scrolling strip in the detail panel
-(falls back to just `defaultImgPath` for older listings saved before this endpoint carried the array).
+"Posted By" column and renders the full gallery as a horizontal-scrolling thumbnail strip in the
+detail panel (falls back to just `defaultImgPath` for older listings saved before this endpoint
+carried the array). Clicking a thumbnail opens a full-size lightbox popout — dark overlay, prev/next
+arrows, an N/total counter, wraps around at the ends, closes on the ✕ button, backdrop click, or
+Escape, and Left/Right arrow keys step through the gallery while it's open. Same pattern
+bechke-mobile already uses for its vehicle-detail gallery (peek carousel + lightbox), just built for
+the web with plain CSS scroll-snap instead of a native `ScrollView`.
 
 **Users & plans** (`AdminUserController`, `/api/v1/admin/users`)
 ```
