@@ -15,8 +15,9 @@ import java.util.Optional;
 public class VehicleService {
     private final VehicleRepository vehicleRepository;
 
+    /** Public browse — only ACTIVE listings. */
     public List<Vehicle> getAllVehicles() {
-        return vehicleRepository.findAll();
+        return vehicleRepository.findByStatus("ACTIVE");
     }
 
     public Optional<Vehicle> getVehicleById(Integer id) {

@@ -12,7 +12,9 @@ import java.util.Optional;
 public interface AdvertisementRepository extends JpaRepository<Advertisement, Integer> {
     Optional<Advertisement> findByVehicleSourceId(String vehicleSourceId);
     List<Advertisement> findByPerson_KeycloakId(String keycloakId);
+    List<Advertisement> findByPerson_KeycloakIdAndStatus(String keycloakId, String status);
     List<Advertisement> findByOrganization_Id(Integer orgId);
+    List<Advertisement> findByOrganization_IdAndStatus(Integer orgId, String status);
 
     Page<Advertisement> findByCountryAndStateAndCityAndNeighbourhood(
             String country, String state, String city, String neighbourhood, Pageable pageable);
@@ -29,4 +31,7 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, In
      * Statuses REJECTED and SOLD are excluded — they no longer consume a slot.
      */
     long countByPerson_KeycloakIdAndStatusNotIn(String keycloakId, java.util.List<String> excludedStatuses);
+
+    /** Same as above, scoped to an organization's listings for org quota checks. */
+    long countByOrganization_IdAndStatusNotIn(Integer organizationId, java.util.List<String> excludedStatuses);
 }

@@ -1,5 +1,6 @@
 package rita.artha.shastra.service;
 
+import rita.artha.shastra.dto.QuotaView;
 import rita.artha.shastra.entity.Advertisement;
 import rita.artha.shastra.entity.UserPlan;
 import rita.artha.shastra.repository.AdvertisementRepository;
@@ -26,7 +27,7 @@ public class AdvertisementService {
     private static final List<String> INACTIVE_STATUSES = List.of("REJECTED", "SOLD", "EXPIRED");
 
     // Default limit for sellers who have no user_plans row (treated as FREE)
-    private static final int DEFAULT_FREE_LIMIT = 5;
+    private static final int DEFAULT_FREE_LIMIT = PlanLimits.DEFAULT_FREE_LIMIT;
 
     // ─── Queries ─────────────────────────────────────────────────────────────────
 
@@ -115,5 +116,59 @@ public class AdvertisementService {
                         .listingLimit(DEFAULT_FREE_LIMIT)
                         .boostEnabled(false)
                         .build());
+    }
+
+    /**
+     * Self-service quota snapshot for the mobile app — lets it check "am I at my
+     * limit" and route straight to the upgrade screen before the user fills out
+     * a whole post form, instead of only finding out after Kafka round-trips the
+     * PENDING_PAYMENT status back. Personal listings only — org quota is a
+     * separate pool (see resolveIntakeStatus) and isn't surfaced here yet.
+     */
+    public QuotaView getQuota(String keycloakId) {
+        UserPlan plan = getPlanOrDefault(keycloakId);
+        long activeCount = advertisementRepository
+                .countByPerson_KeycloakIdAndStatusNotIn(keycloakId, INACTIVE_STATUSES);
+
+        return QuotaView.builder()
+                .planName(plan.getPlanName())
+                .listingLimit(plan.getListingLimit())
+                .boostEnabled(plan.isBoostEnabled())
+                .activeListingCount(activeCount)
+                .atLimit(activeCount >= plan.getListingLimit())
+                .build();
+    }
+
+    // ─── Intake status decision (PENDING_REVIEW vs PENDING_PAYMENT) ──────────────
+
+    /**
+     * Called by VehicleConsumerListener whenever a listing arrives with
+     * status=PENDING_REVIEW from vehicle-service (new post or seller resubmit).
+     * Decides whether the seller (or their org) is within their plan's active-
+     * listing quota. Personal listings check the seller's own UserPlan;
+     * org listings check the organization's subscriptionTier against the same
+     * FREE/BASIC/PREMIUM limit table — two independent quota pools.
+     *
+     * @param keycloakId          seller's Keycloak sub (always required — org listings
+     *                            are still posted by a person)
+     * @param organizationId      null for personal listings
+     * @param orgSubscriptionTier the org's subscriptionTier; ignored when organizationId is null
+     * @return "PENDING_REVIEW" if under quota, "PENDING_PAYMENT" if at/over quota
+     */
+    public String resolveIntakeStatus(String keycloakId, Integer organizationId, String orgSubscriptionTier) {
+        int limit;
+        long activeCount;
+
+        if (organizationId != null) {
+            limit = PlanLimits.orgLimitFor(orgSubscriptionTier);
+            activeCount = advertisementRepository
+                    .countByOrganization_IdAndStatusNotIn(organizationId, INACTIVE_STATUSES);
+        } else {
+            limit = getPlanLimit(keycloakId);
+            activeCount = advertisementRepository
+                    .countByPerson_KeycloakIdAndStatusNotIn(keycloakId, INACTIVE_STATUSES);
+        }
+
+        return activeCount >= limit ? "PENDING_PAYMENT" : "PENDING_REVIEW";
     }
 }

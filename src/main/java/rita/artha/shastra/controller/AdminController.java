@@ -12,11 +12,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import rita.artha.shastra.dto.BulkStatusRequest;
 import rita.artha.shastra.entity.Advertisement;
+import rita.artha.shastra.entity.Vehicle;
 import rita.artha.shastra.repository.AdvertisementRepository;
+import rita.artha.shastra.repository.VehicleRepository;
 import rita.artha.shastra.service.AdminService;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Admin-only listing management endpoints.
@@ -38,6 +41,7 @@ public class AdminController {
 
     private final AdminService            adminService;
     private final AdvertisementRepository advertisementRepository;
+    private final VehicleRepository       vehicleRepository;
 
     /**
      * GET /api/v1/admin/listings/pending?page=0&size=20
@@ -54,6 +58,23 @@ public class AdminController {
         Page<Advertisement> results = advertisementRepository
                 .findByStatus("PENDING_REVIEW", PageRequest.of(page, size));
         return ResponseEntity.ok(results);
+    }
+
+    /**
+     * GET /api/v1/admin/listings/{vehicleSourceId}
+     * Full vehicle detail (image gallery, description, price, brand/year/etc) for
+     * admin-web's listing review panel — Advertisement alone doesn't carry these.
+     */
+    @GetMapping("/listings/{vehicleSourceId}")
+    @Operation(summary = "Get full vehicle detail for a listing (admin only)")
+    public ResponseEntity<?> getListingDetail(
+            @PathVariable String vehicleSourceId,
+            HttpServletRequest request) {
+
+        if (!isAdmin(request)) return forbidden();
+        Optional<Vehicle> vehicle = vehicleRepository.findByVehicleSourceId(vehicleSourceId);
+        return vehicle.<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     /**

@@ -32,6 +32,12 @@ public class PaymentEvent {
     private String sellerEmail;
     private String sellerName;
 
+    /**
+     * Set only when purpose=SUBSCRIPTION_UPGRADE targets an organization's plan
+     * rather than sellerId's own personal plan. Null means personal.
+     */
+    private String organizationId;
+
     /** SUBSCRIPTION_UPGRADE or LISTING_BOOST */
     private String purpose;
 

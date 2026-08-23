@@ -21,5 +21,5 @@ CREATE TABLE IF NOT EXISTS user_plans (
 -- boosted       = true while the listing should appear at the top.
 -- boosted_until = when the boost expires; a scheduled job / query can clear it.
 ALTER TABLE advertisement
-    ADD COLUMN IF NOT EXISTS boosted       TINYINT(1) NOT NULL DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS boosted_until DATETIME   NULL;
+    ADD COLUMN boosted       TINYINT(1) NOT NULL DEFAULT 0,
+    ADD COLUMN boosted_until DATETIME   NULL;

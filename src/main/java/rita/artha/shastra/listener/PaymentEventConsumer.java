@@ -7,13 +7,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import rita.artha.shastra.dto.PaymentEvent;
 import rita.artha.shastra.entity.Advertisement;
+import rita.artha.shastra.entity.Organization;
 import rita.artha.shastra.entity.UserPlan;
 import rita.artha.shastra.repository.AdvertisementRepository;
+import rita.artha.shastra.repository.OrganizationRepository;
 import rita.artha.shastra.repository.UserPlanRepository;
+import rita.artha.shastra.service.AdminService;
+import rita.artha.shastra.service.PlanLimits;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 /**
  * Consumes "payment-events" and applies plan/boost changes to this service's data.
@@ -35,23 +38,16 @@ public class PaymentEventConsumer {
 
     private final AdvertisementRepository advertisementRepository;
     private final UserPlanRepository      userPlanRepository;
+    private final OrganizationRepository  organizationRepository;
+    private final AdminService            adminService;
 
-    // Plan catalogue: planId (from payment-service) → listing limit
-    // These match the seeded rows in payment-service's subscription_plans table.
-    private static final Map<String, Integer> PLAN_LIMITS = Map.of(
-            "FREE",    5,
-            "BASIC",   50,
-            "PREMIUM", 200
-    );
-    private static final Map<String, Boolean> PLAN_BOOST = Map.of(
-            "FREE",    false,
-            "BASIC",   true,
-            "PREMIUM", true
-    );
     private static final int BOOST_DAYS = 7;
 
     @Transactional
-    @KafkaListener(topics = "payment-events", groupId = "search-listing-payment-group")
+    @KafkaListener(
+            topics = "payment-events",
+            groupId = "search-listing-payment-group",
+            containerFactory = "paymentEventListenerFactory")
     public void consume(PaymentEvent event) {
         if (event == null || event.getSellerId() == null) {
             log.warn("PaymentEventConsumer: received null or incomplete event, skipping");
@@ -77,7 +73,11 @@ public class PaymentEventConsumer {
 
     private void handleCaptured(PaymentEvent event) {
         if ("SUBSCRIPTION_UPGRADE".equals(event.getPurpose())) {
-            activatePlan(event.getSellerId(), event.getPlanId());
+            if (event.getOrganizationId() != null && !event.getOrganizationId().isBlank()) {
+                activateOrgPlan(event.getOrganizationId(), event.getPlanId());
+            } else {
+                activatePersonalPlan(event.getSellerId(), event.getPlanId());
+            }
         } else if ("LISTING_BOOST".equals(event.getPurpose())) {
             activateBoost(event.getSellerId(), event.getListingId());
         } else {
@@ -89,15 +89,15 @@ public class PaymentEventConsumer {
      * Upserts the seller's user_plans row.
      * planId from the event is the plan name: FREE | BASIC | PREMIUM.
      */
-    private void activatePlan(String keycloakId, String planId) {
+    private void activatePersonalPlan(String keycloakId, String planId) {
         if (planId == null || planId.isBlank()) {
             log.error("PaymentEventConsumer: SUBSCRIPTION_UPGRADE missing planId for seller {}", keycloakId);
             return;
         }
 
         String planName = planId.toUpperCase();
-        int limit       = PLAN_LIMITS.getOrDefault(planName, 5);
-        boolean boost   = PLAN_BOOST.getOrDefault(planName, false);
+        int limit       = PlanLimits.personalLimitFor(planName);
+        boolean boost   = PlanLimits.boostFor(planName);
 
         UserPlan plan = userPlanRepository.findByKeycloakId(keycloakId)
                 .orElse(UserPlan.builder().keycloakId(keycloakId).build());
@@ -108,8 +108,49 @@ public class PaymentEventConsumer {
         plan.setValidUntil(LocalDate.now().plusDays(30));
         userPlanRepository.save(plan);
 
-        log.info("Activated plan {} for seller {} — limit={} boost={}",
+        log.info("Activated personal plan {} for seller {} — limit={} boost={}",
                 planName, keycloakId, limit, boost);
+
+        // A higher quota may unblock listings that were stuck waiting on payment.
+        adminService.releaseFromPendingPayment(keycloakId);
+    }
+
+    /**
+     * Same as activatePersonalPlan, but updates the organization's subscriptionTier
+     * instead — a separate quota pool from any personal plan the buyer might also
+     * have (see AdvertisementService.resolveIntakeStatus). Uses org-scaled limits
+     * (PlanLimits.orgLimitFor) — same tier names as personal, higher numbers.
+     */
+    private void activateOrgPlan(String organizationId, String planId) {
+        if (planId == null || planId.isBlank()) {
+            log.error("PaymentEventConsumer: SUBSCRIPTION_UPGRADE missing planId for org {}", organizationId);
+            return;
+        }
+
+        int orgId;
+        try {
+            orgId = Integer.parseInt(organizationId);
+        } catch (NumberFormatException e) {
+            log.error("PaymentEventConsumer: invalid organizationId={} in SUBSCRIPTION_UPGRADE event", organizationId);
+            return;
+        }
+
+        Organization org = organizationRepository.findById(orgId).orElse(null);
+        if (org == null) {
+            log.error("PaymentEventConsumer: no Organization found for id={}", orgId);
+            return;
+        }
+
+        String planName = planId.toUpperCase();
+        org.setSubscriptionTier(planName);
+        org.setUpdatedAt(LocalDateTime.now());
+        organizationRepository.save(org);
+
+        int limit = PlanLimits.orgLimitFor(planName);
+        log.info("Activated org plan {} for organization {} — limit={}", planName, orgId, limit);
+
+        // A higher quota may unblock this org's listings that were stuck waiting on payment.
+        adminService.releaseOrgFromPendingPayment(orgId);
     }
 
     /**

@@ -15,9 +15,13 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Integer> {
 
     Optional<Vehicle> findByVehicleSourceId(String vehicleSourceId);
 
+    /** Public browse endpoint — only ACTIVE listings are visible to guests/buyers. */
+    Page<Vehicle> findByStatus(String status, Pageable pageable);
+    java.util.List<Vehicle> findByStatus(String status);
+
     @Query("""
             SELECT v FROM Vehicle v
-            WHERE v.status != 'DELETED'
+            WHERE v.status = 'ACTIVE'
             AND (:country       IS NULL OR LOWER(v.country)       = LOWER(:country))
             AND (:state         IS NULL OR LOWER(v.state)         = LOWER(:state))
             AND (:city          IS NULL OR LOWER(v.city)          = LOWER(:city))
