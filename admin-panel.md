@@ -90,11 +90,20 @@ plan upgrade lands). This is one of the *working* Kafka pipelines in the workspa
 
 **Listings** (`AdminController`, `/api/v1/admin`)
 ```
-GET  /listings/pending?page=&size=       paginated PENDING_REVIEW queue
-GET  /listings/{vehicleSourceId}          full vehicle detail for the review panel
+GET  /listings/pending?page=&size=       paginated PENDING_REVIEW queue — AdminListingSummary rows
+GET  /listings/{vehicleSourceId}          full vehicle detail — AdminListingDetail
 POST /listings/approve  { listingIds }
 POST /listings/reject   { listingIds, reason? }
 ```
+`Advertisement.person` / `Vehicle.person` are `@JsonIgnore`'d (LAZY, not meant for general API
+consumers), so the raw entities can't surface who posted a listing — `AdminController` maps into
+`AdminListingSummary`/`AdminListingDetail` instead, adding `sellerKeycloakId`/`sellerName`/
+`sellerEmail`/`sellerMobile` (falls back the same way the rest of the app does when `fullName` is
+empty — Kafka-stub sellers, see the search-listing-service section of the workspace `CLAUDE.md`).
+`AdminListingDetail` also parses `Vehicle.imageUrlsJson` into a real `imageUrls: string[]` — the raw
+entity only exposes it as an opaque JSON string. admin-web's `ListingsPage` shows the seller in a
+"Posted By" column and renders the full gallery as a horizontal-scrolling strip in the detail panel
+(falls back to just `defaultImgPath` for older listings saved before this endpoint carried the array).
 
 **Users & plans** (`AdminUserController`, `/api/v1/admin/users`)
 ```
