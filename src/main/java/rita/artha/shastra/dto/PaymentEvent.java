@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
  * Event types relevant to search-listing-service:
  *   PAYMENT_CAPTURED  — payment succeeded
  *     purpose=SUBSCRIPTION_UPGRADE → update user_plans for sellerId
- *     purpose=LISTING_BOOST        → mark the listing as boosted for 7 days
+ *     purpose=LISTING_BOOST        → mark the listing as boosted for boostDurationDays,
+ *                                     capped at the seller's (or org's) plan featured_slots
  *
  * Other event types (PAYMENT_FAILED, REFUND_*, etc.) are ignored here —
  * they are handled by notification-service.
@@ -43,6 +44,9 @@ public class PaymentEvent {
 
     private String planId;             // set when purpose = SUBSCRIPTION_UPGRADE
     private String listingId;          // set when purpose = LISTING_BOOST (also legacy field)
+
+    /** Purchased boost length in days (3/7/30) — set only when purpose = LISTING_BOOST. */
+    private Integer boostDurationDays;
 
     private Long   amount;             // in paise
     private String currency;

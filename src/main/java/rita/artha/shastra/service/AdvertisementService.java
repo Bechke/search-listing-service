@@ -129,6 +129,8 @@ public class AdvertisementService {
         UserPlan plan = getPlanOrDefault(keycloakId);
         long activeCount = advertisementRepository
                 .countByPerson_KeycloakIdAndStatusNotIn(keycloakId, INACTIVE_STATUSES);
+        long featuredUsed = advertisementRepository
+                .countByPerson_KeycloakIdAndBoostedTrueAndBoostedUntilAfter(keycloakId, java.time.LocalDateTime.now());
 
         return QuotaView.builder()
                 .planName(plan.getPlanName())
@@ -136,6 +138,9 @@ public class AdvertisementService {
                 .boostEnabled(plan.isBoostEnabled())
                 .activeListingCount(activeCount)
                 .atLimit(activeCount >= plan.getListingLimit())
+                .featuredSlots(plan.getFeaturedSlots())
+                .featuredSlotsUsed(featuredUsed)
+                .featuredSlotsAvailable(Math.max(0, plan.getFeaturedSlots() - featuredUsed))
                 .build();
     }
 

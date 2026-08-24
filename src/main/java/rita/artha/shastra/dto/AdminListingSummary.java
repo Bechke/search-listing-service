@@ -30,6 +30,9 @@ public class AdminListingSummary {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    /** From the matching Vehicle row (batch-loaded by vehicleSourceId) — Advertisement has no price. */
+    private Double price;
+
     // ── Seller (Advertisement.person) ──────────────────────────────────────────
     private String sellerKeycloakId;
     private String sellerName;

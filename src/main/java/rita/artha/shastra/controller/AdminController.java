@@ -69,7 +69,16 @@ public class AdminController {
         if (!isAdmin(request)) return forbidden();
         Page<Advertisement> results = advertisementRepository
                 .findByStatus("PENDING_REVIEW", PageRequest.of(page, size));
-        return ResponseEntity.ok(results.map(this::toSummary));
+
+        List<String> vehicleSourceIds = results.getContent().stream()
+                .map(Advertisement::getVehicleSourceId)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        Map<String, Double> priceByVehicleSourceId = vehicleRepository.findByVehicleSourceIdIn(vehicleSourceIds)
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(Vehicle::getVehicleSourceId, Vehicle::getPrice));
+
+        return ResponseEntity.ok(results.map(ad -> toSummary(ad, priceByVehicleSourceId)));
     }
 
     /**
@@ -146,7 +155,7 @@ public class AdminController {
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
-    private AdminListingSummary toSummary(Advertisement ad) {
+    private AdminListingSummary toSummary(Advertisement ad, Map<String, Double> priceByVehicleSourceId) {
         Person seller = ad.getPerson();
         return AdminListingSummary.builder()
                 .advertisementId(ad.getAdvertisementId())
@@ -164,6 +173,7 @@ public class AdminController {
                 .boostedUntil(ad.getBoostedUntil())
                 .createdAt(ad.getCreatedAt())
                 .updatedAt(ad.getUpdatedAt())
+                .price(priceByVehicleSourceId.get(ad.getVehicleSourceId()))
                 .sellerKeycloakId(seller != null ? seller.getKeycloakId() : null)
                 .sellerName(seller != null ? seller.getFullName() : null)
                 .sellerEmail(seller != null ? seller.getEmail() : null)

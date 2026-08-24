@@ -42,6 +42,11 @@ public class UserPlan {
     @Builder.Default
     private boolean boostEnabled = false;
 
+    /** Max listings this seller may have boosted at once — see PlanLimits. */
+    @Column(name = "featured_slots", nullable = false)
+    @Builder.Default
+    private int featuredSlots = 0;
+
     /** NULL means no expiry (FREE plan never expires). */
     @Column(name = "valid_until")
     private LocalDate validUntil;

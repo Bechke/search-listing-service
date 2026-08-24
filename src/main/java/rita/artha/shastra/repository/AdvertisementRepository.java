@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,4 +35,14 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, In
 
     /** Same as above, scoped to an organization's listings for org quota checks. */
     long countByOrganization_IdAndStatusNotIn(Integer organizationId, java.util.List<String> excludedStatuses);
+
+    /**
+     * Counts a seller's currently-occupied featured slots (boosted=true and not yet
+     * expired). Used to cap new boosts at the seller's plan's featured_slots — a
+     * concurrency check, not a periodic counter (see PlanLimits).
+     */
+    long countByPerson_KeycloakIdAndBoostedTrueAndBoostedUntilAfter(String keycloakId, LocalDateTime now);
+
+    /** Same as above, scoped to an organization's listings. */
+    long countByOrganization_IdAndBoostedTrueAndBoostedUntilAfter(Integer organizationId, LocalDateTime now);
 }

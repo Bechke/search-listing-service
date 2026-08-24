@@ -54,4 +54,9 @@ public class VehicleService {
                 PageRequest.of(page, size)
         );
     }
+
+    /** Currently-boosted listings for the "Featured" rail, optionally scoped to a subCategory. */
+    public Page<Vehicle> getFeaturedVehicles(String subCategory, int limit) {
+        return vehicleRepository.findFeatured(subCategory, PageRequest.of(0, limit));
+    }
 }

@@ -180,6 +180,66 @@ Confirmed this by sending `entityId: "2"` deliberately: the seller's plan got se
 
 ---
 
+## Featured slots + listing boost (added after the pass above)
+
+`SubscriptionPlan.featuredSlots` (payment-service) had existed since the original plan schema but was
+dead — nothing tracked it here, and `Advertisement.boosted`/`boostedUntil` (set by `PaymentEventConsumer`
+on a captured `LISTING_BOOST` payment) was itself dead in the other direction: nothing capped how many
+boosts a seller could hold, and nothing read `boosted` back out for display. Both are now wired up.
+
+**Slot model: concurrent capacity, not a periodic allowance.** `featured_slots` = max listings a seller
+may have boosted *at once*. A boost occupies a slot for its purchased duration and the slot self-frees
+once `boosted_until` passes — "currently featured" is always computed as
+`boosted = true AND boosted_until > NOW()` at query time, never a separately-maintained counter. No
+scheduled job exists or is needed for this.
+
+**New in this pass:**
+- `user_plans.featured_slots` (`V15__add_featured_slots.sql`) — mirrors payment-service's
+  `subscription_plans.featured_slots` per tier via `PlanLimits.personalFeaturedSlotsFor`/
+  `orgFeaturedSlotsFor`, set alongside `listingLimit`/`boostEnabled` in
+  `PaymentEventConsumer.activatePersonalPlan`/`activateOrgPlan`. **Not yet exposed on the admin manual
+  plan-override endpoint** (`PUT /admin/users/{keycloakId}/plan`) — an admin comping a plan today can't
+  set `featuredSlots` directly, it stays at whatever the seller's last real upgrade set (or 0). Same
+  shape as the existing `PlanOverrideRequest`/`overridePlan` pattern if this needs closing later.
+- `PaymentEventConsumer.activateBoost` now gates on remaining capacity before setting `boosted=true` —
+  counts the seller's (or their org's, if the listing has one) other currently-boosted ads and skips
+  activation if already at `featuredSlots`. **Known limitation:** this check only runs at
+  `PAYMENT_CAPTURED` time — there's no synchronous pre-payment check across payment-service and this
+  service (they only talk via Kafka), so a payment can in principle succeed and still not apply if a
+  slot filled in the race. Mobile mitigates the common case with a `GET /ads/my/quota` pre-flight before
+  showing the boost button; a real fix (refund-on-reject, or a synchronous cross-service check) is a
+  follow-up.
+- Boost duration/pricing is fixed server-side, not client-settable: payment-service's
+  `PaymentService.BOOST_PRICE_PAISE_BY_DAYS` maps `{3: ₹99, 7: ₹199, 30: ₹599}` — `OrderRequest`'s
+  `amountPaise` is ignored for `LISTING_BOOST`. The chosen duration rides through on `PaymentEvent`
+  (`boostDurationDays`) and `PaymentEventConsumer.activateBoost` uses it for `boostedUntil`, falling
+  back to the historical 7-day `BOOST_DAYS` constant only if the field is absent (older in-flight
+  messages).
+- **Boost-as-add-on:** a `SUBSCRIPTION_UPGRADE` order can now carry `addonBoostListingId` +
+  `boostDurationDays` to also boost one listing in the same payment (one Razorpay order, amount = plan
+  price + boost price). `PaymentEventConsumer.handleCaptured` activates the plan first, then attempts
+  the add-on boost — deliberately in that order, so the capacity check sees the *new* plan's
+  (higher) `featuredSlots`, not the pre-upgrade one.
+- `GET /ads/my/quota` (`AdvertisementService.getQuota`) now also returns `featuredSlots`,
+  `featuredSlotsUsed`, `featuredSlotsAvailable` — same self-service pattern as the existing
+  `listingLimit`/`atLimit` fields, personal listings only (org quota still isn't surfaced here, same
+  pre-existing gap as the listing-limit side).
+- New read endpoint for the mobile "Featured" rail: `GET /api/v1/vehicles/featured?subCategory=&limit=`
+  (gateway: `GET /listings/featured`) — joins `Advertisement` (`boosted=true`, not expired) to `Vehicle`
+  by `vehicleSourceId` (the two aren't JPA-mapped to each other, just share that string key), ordered by
+  `boostedUntil DESC`. Scoped to vehicle listings only — property/electronics don't reach this service
+  yet (see the workspace `CLAUDE.md`'s Kafka topics gap), so they have no boost/featured path either.
+- Fixed a stale doc comment while touching this: `PaymentEvent.java`'s javadoc (both here and in
+  payment-service/notification-service's copies) referenced a `seller-admin-service` that doesn't exist
+  anywhere in this workspace — it's this service's `PaymentEventConsumer` that actually does the
+  activation. Corrected to say so.
+
+Mobile-side: `MyListingsScreen` gained a per-listing "Boost" action (duration picker, blocked when
+`featuredSlotsAvailable` is 0) and `UpgradePlanScreen` gained the add-on picker described above; a new
+"Featured" horizontal rail sits above the vertical listings on the home screen's per-sub-category view.
+
+---
+
 ## Known gaps / next steps
 
 - **No audit trail.** Approve/reject/refund/role-grant are all logged via `log.info(...)` only —

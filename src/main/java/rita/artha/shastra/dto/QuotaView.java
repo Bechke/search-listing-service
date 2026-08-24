@@ -17,4 +17,9 @@ public class QuotaView {
     private boolean boostEnabled;
     private long    activeListingCount;
     private boolean atLimit;
+
+    /** Max listings that may be boosted at once, and how many currently are. */
+    private int  featuredSlots;
+    private long featuredSlotsUsed;
+    private long featuredSlotsAvailable;
 }
