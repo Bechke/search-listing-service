@@ -55,6 +55,8 @@ public class VehicleDTO {
 
     // ── Status & timestamps ────────────────────────────────────────────────────
     private String status;
+    /** Set only when status=REJECTED — surfaced to the seller and in notifications. */
+    private String rejectionReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

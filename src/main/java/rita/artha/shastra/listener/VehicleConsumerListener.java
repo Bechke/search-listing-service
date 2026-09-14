@@ -10,12 +10,14 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import rita.artha.shastra.dto.VehicleDTO;
 import rita.artha.shastra.entity.Advertisement;
+import rita.artha.shastra.entity.Organization;
 import rita.artha.shastra.entity.Person;
 import rita.artha.shastra.entity.Vehicle;
 import rita.artha.shastra.repository.AdvertisementRepository;
 import rita.artha.shastra.repository.OrganizationRepository;
 import rita.artha.shastra.repository.PersonRepository;
 import rita.artha.shastra.repository.VehicleRepository;
+import rita.artha.shastra.service.AdvertisementService;
 
 import java.time.LocalDateTime;
 
@@ -28,6 +30,7 @@ public class VehicleConsumerListener {
     private final PersonRepository         personRepository;
     private final AdvertisementRepository  advertisementRepository;
     private final OrganizationRepository   orgRepo;
+    private final AdvertisementService     advertisementService;
     private final ObjectMapper             objectMapper;
 
     private static final Logger logger = LoggerFactory.getLogger(VehicleConsumerListener.class);
@@ -51,7 +54,35 @@ public class VehicleConsumerListener {
         // ── 1. Find-or-create the seller (Person) by Keycloak sub ─────────────
         Person person = resolvePerson(dto);
 
-        // ── 2. Upsert Vehicle row ──────────────────────────────────────────────
+        // ── 2. Resolve organization once (shared by Vehicle, Advertisement, quota check) ──
+        Integer orgId = null;
+        Organization org = null;
+        if (dto.getOrganizationId() != null) {
+            try {
+                orgId = Integer.parseInt(dto.getOrganizationId());
+                org = orgRepo.findById(orgId).orElse(null);
+            } catch (NumberFormatException ignored) {
+                logger.warn("Invalid organizationId in VehicleDTO: {}", dto.getOrganizationId());
+            }
+        }
+
+        // ── 3. Decide the real status ────────────────────────────────────────
+        // vehicle-service sends PENDING_REVIEW for every new post/resubmit — it has
+        // no visibility into plan quotas. This service is the one that knows the
+        // seller's/org's UserPlan, so it decides PENDING_REVIEW (proceed to admin
+        // queue) vs PENDING_PAYMENT (blocked until plan upgrade) here. Any other
+        // status (ACTIVE/REJECTED from AdminService, SOLD/INACTIVE, etc.) passes
+        // through unchanged — it's an explicit state transition, not an intake.
+        String resolvedStatus = dto.getStatus();
+        if ("PENDING_REVIEW".equals(resolvedStatus)) {
+            resolvedStatus = advertisementService.resolveIntakeStatus(
+                    person.getKeycloakId(), orgId, org != null ? org.getSubscriptionTier() : null);
+        }
+        if (resolvedStatus == null) {
+            resolvedStatus = "ACTIVE";
+        }
+
+        // ── 4. Upsert Vehicle row ────────────────────────────────────────────
         Vehicle vehicle = vehicleRepository
                 .findByVehicleSourceId(dto.getVehicleId())
                 .orElse(new Vehicle());
@@ -73,7 +104,7 @@ public class VehicleConsumerListener {
         vehicle.setState(dto.getState());
         vehicle.setCity(dto.getCity() != null ? dto.getCity() : dto.getNeighbourhood());
         vehicle.setNeighbourhood(dto.getNeighbourhood());
-        vehicle.setStatus(dto.getStatus() != null ? dto.getStatus() : "ACTIVE");
+        vehicle.setStatus(resolvedStatus);
         vehicle.setUpdatedAt(dto.getUpdatedAt() != null ? dto.getUpdatedAt() : LocalDateTime.now());
         if (vehicle.getCreatedAt() == null) {
             vehicle.setCreatedAt(dto.getCreatedAt() != null ? dto.getCreatedAt() : LocalDateTime.now());
@@ -87,19 +118,14 @@ public class VehicleConsumerListener {
             }
         }
 
-        if (dto.getOrganizationId() != null) {
-            try {
-                orgRepo.findById(Integer.parseInt(dto.getOrganizationId()))
-                       .ifPresent(vehicle::setOrganization);
-            } catch (NumberFormatException ignored) {
-                logger.warn("Invalid organizationId in VehicleDTO: {}", dto.getOrganizationId());
-            }
+        if (org != null) {
+            vehicle.setOrganization(org);
         }
 
         vehicleRepository.save(vehicle);
-        logger.info("Saved/updated Vehicle for vehicleSourceId={}", dto.getVehicleId());
+        logger.info("Saved/updated Vehicle for vehicleSourceId={} status={}", dto.getVehicleId(), resolvedStatus);
 
-        // ── 3. Upsert Advertisement row ────────────────────────────────────────
+        // ── 5. Upsert Advertisement row ──────────────────────────────────────
         Advertisement ad = advertisementRepository
                 .findByVehicleSourceId(dto.getVehicleId())
                 .orElse(new Advertisement());
@@ -114,23 +140,23 @@ public class VehicleConsumerListener {
         ad.setState(dto.getState());
         ad.setCity(dto.getCity() != null ? dto.getCity() : dto.getNeighbourhood());
         ad.setNeighbourhood(dto.getNeighbourhood());
-        ad.setStatus(dto.getStatus() != null ? dto.getStatus() : "ACTIVE");
+        ad.setStatus(resolvedStatus);
+        // A resubmit (status arrives back at PENDING_REVIEW) or a fresh approval
+        // clears any prior rejection reason — it's no longer relevant.
+        if ("PENDING_REVIEW".equals(resolvedStatus) || "ACTIVE".equals(resolvedStatus)) {
+            ad.setRejectionReason(null);
+        }
         ad.setUpdatedAt(dto.getUpdatedAt() != null ? dto.getUpdatedAt() : LocalDateTime.now());
         if (ad.getCreatedAt() == null) {
             ad.setCreatedAt(dto.getCreatedAt() != null ? dto.getCreatedAt() : LocalDateTime.now());
         }
 
-        if (dto.getOrganizationId() != null) {
-            try {
-                orgRepo.findById(Integer.parseInt(dto.getOrganizationId()))
-                       .ifPresent(ad::setOrganization);
-            } catch (NumberFormatException ignored) {
-                logger.warn("Invalid organizationId in VehicleDTO: {}", dto.getOrganizationId());
-            }
+        if (org != null) {
+            ad.setOrganization(org);
         }
 
         advertisementRepository.save(ad);
-        logger.info("Saved/updated Advertisement for vehicleSourceId={}", dto.getVehicleId());
+        logger.info("Saved/updated Advertisement for vehicleSourceId={} status={}", dto.getVehicleId(), resolvedStatus);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

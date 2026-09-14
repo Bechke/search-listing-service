@@ -53,6 +53,19 @@ public class VehicleController {
         );
     }
 
+    /**
+     * Currently-boosted listings for the mobile app's "Featured" rail, optionally
+     * scoped to one subCategory. Exposed through the gateway at: GET /listings/featured
+     */
+    @GetMapping("/featured")
+    @Operation(summary = "Get currently-boosted (featured) listings, optionally by subCategory")
+    public ResponseEntity<Page<Vehicle>> getFeaturedVehicles(
+            @RequestParam(required = false) String subCategory,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        return ResponseEntity.ok(vehicleService.getFeaturedVehicles(subCategory, limit));
+    }
+
     @GetMapping("/{id}")
     public Optional<Vehicle> getVehicleById(@PathVariable Integer id) {
         return vehicleService.getVehicleById(id);

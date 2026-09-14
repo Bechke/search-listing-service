@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * Upserted by PaymentEventConsumer when PAYMENT_CAPTURED arrives
  * with purpose=SUBSCRIPTION_UPGRADE.
  *
- * Sellers who have never paid are treated as FREE (listing_limit=5, boost_enabled=false).
+ * Sellers who have never paid are treated as FREE (listing_limit=3, boost_enabled=false).
  */
 @Entity
 @Table(name = "user_plans")
@@ -36,11 +36,16 @@ public class UserPlan {
 
     @Column(name = "listing_limit", nullable = false)
     @Builder.Default
-    private int listingLimit = 5;
+    private int listingLimit = 3;
 
     @Column(name = "boost_enabled", nullable = false)
     @Builder.Default
     private boolean boostEnabled = false;
+
+    /** Max listings this seller may have boosted at once — see PlanLimits. */
+    @Column(name = "featured_slots", nullable = false)
+    @Builder.Default
+    private int featuredSlots = 0;
 
     /** NULL means no expiry (FREE plan never expires). */
     @Column(name = "valid_until")

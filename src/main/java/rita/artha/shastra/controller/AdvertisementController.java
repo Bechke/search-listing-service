@@ -1,5 +1,6 @@
 package rita.artha.shastra.controller;
 
+import rita.artha.shastra.dto.QuotaView;
 import rita.artha.shastra.entity.Advertisement;
 import rita.artha.shastra.repository.AdvertisementRepository;
 import rita.artha.shastra.service.AdvertisementService;
@@ -8,6 +9,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,6 +50,21 @@ public class AdvertisementController {
             @RequestHeader(value = "X-User-Id", required = false) String keycloakId) {
         if (keycloakId == null || keycloakId.isBlank()) return List.of();
         return advertisementRepository.findByPerson_KeycloakId(keycloakId);
+    }
+
+    /**
+     * Self-service plan/quota check — lets the mobile app route straight to the
+     * upgrade screen before the user fills out a post form, instead of only
+     * finding out after submitting. Personal listings only (see QuotaView).
+     */
+    @GetMapping("/my/quota")
+    @Operation(summary = "Get current user's plan + active listing quota")
+    public ResponseEntity<QuotaView> getMyQuota(
+            @RequestHeader(value = "X-User-Id", required = false) String keycloakId) {
+        if (keycloakId == null || keycloakId.isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(advertisementService.getQuota(keycloakId));
     }
 
     @GetMapping("/org/{orgId}")

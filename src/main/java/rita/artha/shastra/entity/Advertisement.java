@@ -29,6 +29,11 @@ public class Advertisement {
     private String title;
     private String defaultImgPath;
     private String status;
+
+    /** Set by AdminService.bulkReject; cleared on approve or on seller resubmit. */
+    @Column(columnDefinition = "TEXT")
+    private String rejectionReason;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
