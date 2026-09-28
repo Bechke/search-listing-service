@@ -32,6 +32,15 @@ public class PaymentEventKafkaConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
+    @Value("${spring.kafka.properties.security.protocol:PLAINTEXT}")
+    private String securityProtocol;
+
+    @Value("${spring.kafka.properties.sasl.mechanism:}")
+    private String saslMechanism;
+
+    @Value("${spring.kafka.properties.sasl.jaas.config:}")
+    private String saslJaasConfig;
+
     @Bean
     public ConsumerFactory<String, PaymentEvent> paymentEventConsumerFactory() {
         Map<String, Object> props = new HashMap<>();
@@ -42,6 +51,18 @@ public class PaymentEventKafkaConfig {
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, PaymentEvent.class.getName());
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
+
+        // Inherit SASL/SSL settings from environment — required for Redpanda Cloud
+        if (!securityProtocol.equals("PLAINTEXT")) {
+            props.put("security.protocol", securityProtocol);
+        }
+        if (!saslMechanism.isEmpty()) {
+            props.put("sasl.mechanism", saslMechanism);
+        }
+        if (!saslJaasConfig.isEmpty()) {
+            props.put("sasl.jaas.config", saslJaasConfig);
+        }
+
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
