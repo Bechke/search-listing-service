@@ -67,19 +67,18 @@ public class VehicleConsumerListener {
         }
 
         // ── 3. Decide the real status ────────────────────────────────────────
-        // vehicle-service sends PENDING_REVIEW for every new post/resubmit — it has
-        // no visibility into plan quotas. This service is the one that knows the
-        // seller's/org's UserPlan, so it decides PENDING_REVIEW (proceed to admin
-        // queue) vs PENDING_PAYMENT (blocked until plan upgrade) here. Any other
-        // status (ACTIVE/REJECTED from AdminService, SOLD/INACTIVE, etc.) passes
-        // through unchanged — it's an explicit state transition, not an intake.
+        // For CREATE events: always run the intake quota check regardless of the
+        // status carried in the event. vehicle-service may send PENDING_REVIEW,
+        // ACTIVE, or PENDING depending on client version — we normalise here.
+        // For all other events (UPDATE/DELETE/status transitions from admin):
+        // pass the status through unchanged — those are explicit state changes.
         String resolvedStatus = dto.getStatus();
-        if ("PENDING_REVIEW".equals(resolvedStatus)) {
+        if ("CREATE".equals(eventType) || "PENDING_REVIEW".equals(resolvedStatus)) {
             resolvedStatus = advertisementService.resolveIntakeStatus(
                     person.getKeycloakId(), orgId, org != null ? org.getSubscriptionTier() : null);
         }
         if (resolvedStatus == null) {
-            resolvedStatus = "ACTIVE";
+            resolvedStatus = "PENDING_REVIEW";
         }
 
         // ── 4. Upsert Vehicle row ────────────────────────────────────────────
